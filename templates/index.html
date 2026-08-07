@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MED-X AI | Hospital Assistant for Chest Radiographs</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome for medical icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Navigation / Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="pulse-icon">
+                    <i class="fa-solid fa-heart-pulse"></i>
+                </div>
+                <div class="brand">
+                    <h1>MED-X AI</h1>
+                    <span class="sub-brand">Radiology Diagnostic Suite</span>
+                </div>
+            </div>
+            <div class="system-status">
+                <span class="status-indicator online"></span>
+                <span class="status-text">AI Diagnostic Core: <strong>Active</strong></span>
+            </div>
+        </header>
+
+        <!-- Main Workspace Grid -->
+        <main class="workspace-grid">
+            <!-- LEFT PANEL: Upload & Controls -->
+            <section class="panel left-panel">
+                <div class="panel-header">
+                    <i class="fa-solid fa-folder-open icon"></i>
+                    <h2>Patient Radiograph Input</h2>
+                </div>
+                
+                <!-- Upload Zone -->
+                <div class="upload-zone" id="upload-zone">
+                    <input type="file" id="file-input" accept="image/*" class="file-input">
+                    <div class="upload-content">
+                        <div class="upload-icon-wrapper">
+                            <i class="fa-solid fa-cloud-arrow-up animate-bounce"></i>
+                        </div>
+                        <h3>Upload Patient X-ray</h3>
+                        <p class="upload-hint">Drag & drop or click to browse</p>
+                        <span class="file-types">Supports DICOM, JPEG, PNG</span>
+                    </div>
+                </div>
+
+                <!-- Sample Library -->
+                <div class="sample-library-section">
+                    <h3>Quick-Select Clinic Samples</h3>
+                    <p class="section-desc">Select a validated sample to run clinical demonstrations instantly.</p>
+                    <div class="sample-grid">
+                        <button class="sample-btn" data-sample="normal.jpg">
+                            <div class="sample-thumb-wrapper">
+                                <i class="fa-solid fa- lungs"></i>
+                                <span class="badge badge-normal">Normal</span>
+                            </div>
+                            <span class="sample-label">Case #104: Normal</span>
+                        </button>
+                        <button class="sample-btn" data-sample="pneumonia.jpg">
+                            <div class="sample-thumb-wrapper">
+                                <span class="badge badge-warning">Pneumonia</span>
+                            </div>
+                            <span class="sample-label">Case #312: Pneumonia</span>
+                        </button>
+                        <button class="sample-btn" data-sample="cardiomegaly.jpg">
+                            <div class="sample-thumb-wrapper">
+                                <span class="badge badge-danger">Cardiomegaly</span>
+                            </div>
+                            <span class="sample-label">Case #509: Cardiomegaly</span>
+                        </button>
+                        <button class="sample-btn" data-sample="effusion.jpg">
+                            <div class="sample-thumb-wrapper">
+                                <span class="badge badge-danger">Pleural Effusion</span>
+                            </div>
+                            <span class="sample-label">Case #224: Effusion</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="settings-panel">
+                    <h3>Visualization Parameters</h3>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>GRAD-CAM Opacity</span>
+                            <span id="opacity-val">60%</span>
+                        </div>
+                        <input type="range" id="opacity-slider" min="0" max="100" value="60" class="slider">
+                    </div>
+                    <div class="view-modes">
+                        <button class="view-mode-btn active" data-mode="overlay">
+                            <i class="fa-solid fa-layer-group"></i> Overlay
+                        </button>
+                        <button class="view-mode-btn" data-mode="split">
+                            <i class="fa-solid fa-arrows-left-right"></i> Split Screen
+                        </button>
+                        <button class="view-mode-btn" data-mode="side">
+                            <i class="fa-solid fa-columns"></i> Side-by-Side
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CENTER PANEL: Interactive Radiograph Visualizer -->
+            <section class="panel center-panel">
+                <div class="panel-header">
+                    <i class="fa-solid fa-x-ray icon"></i>
+                    <h2>Visualizer Core</h2>
+                    <div class="image-stats" id="image-resolution" style="display: none;">
+                        <span id="res-badge">512 x 512px</span>
+                    </div>
+                </div>
+
+                <!-- Visualizer Display Area -->
+                <div class="visualizer-container" id="visualizer-container">
+                    <div class="visualizer-welcome" id="visualizer-welcome">
+                        <div class="pulse-circle">
+                            <i class="fa-solid fa-microscope"></i>
+                        </div>
+                        <h2>Awaiting Radiograph Analysis</h2>
+                        <p>Upload a chest radiograph or choose a clinic sample from the left panel to load the AI pipeline and calculate GRAD-CAM activations.</p>
+                    </div>
+
+                    <!-- Loading overlay -->
+                    <div class="loading-overlay" id="loading-overlay" style="display: none;">
+                        <div class="spinner-box">
+                            <div class="double-bounce1"></div>
+                            <div class="double-bounce2"></div>
+                        </div>
+                        <h3>Analyzing Lung Fields...</h3>
+                        <p>Running CNN inference & backpropagating GRAD-CAM gradients</p>
+                        <div class="progress-bar-container">
+                            <div class="analysis-progress" id="analysis-progress-bar"></div>
+                        </div>
+                    </div>
+
+                    <!-- Visualization views -->
+                    <div class="image-wrapper" id="image-wrapper" style="display: none;">
+                        <!-- Scanline sweep animation -->
+                        <div class="scanline" id="scanline"></div>
+
+                        <!-- Overlay mode structure -->
+                        <div class="view-container mode-overlay" id="view-overlay">
+                            <img id="img-orig-overlay" src="" alt="Original Radiograph">
+                            <img id="img-cam-overlay" src="" alt="GRAD-CAM Heatmap">
+                        </div>
+
+                        <!-- Split mode structure -->
+                        <div class="view-container mode-split" id="view-split" style="display: none;">
+                            <div class="split-side split-left">
+                                <img id="img-orig-split" src="" alt="Original Radiograph">
+                            </div>
+                            <div class="split-side split-right">
+                                <img id="img-cam-split" src="" alt="GRAD-CAM Heatmap">
+                            </div>
+                            <div class="split-divider" id="split-divider">
+                                <div class="divider-handle">
+                                    <i class="fa-solid fa-arrows-left-right"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Side-by-side mode structure -->
+                        <div class="view-container mode-side" id="view-side" style="display: none;">
+                            <div class="side-panel">
+                                <span class="side-tag">Raw Radiograph</span>
+                                <img id="img-orig-side" src="" alt="Original Radiograph">
+                            </div>
+                            <div class="side-panel">
+                                <span class="side-tag tag-cam">AI GRAD-CAM Overlay</span>
+                                <div class="side-cam-wrapper">
+                                    <img id="img-bg-side" src="" alt="Original Background">
+                                    <img id="img-cam-side" src="" alt="GRAD-CAM Heatmap">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Pixel inspector tooltip -->
+                        <div class="pixel-inspector" id="pixel-inspector" style="display: none;">
+                            <div class="inspector-item"><span class="label">Pos:</span> <span id="inspect-pos">X: 0, Y: 0</span></div>
+                            <div class="inspector-item"><span class="label">Activation:</span> <span id="inspect-val" class="text-cyan">0.00</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer status bar inside Center Panel -->
+                <div class="visualizer-footer" id="visualizer-footer" style="display: none;">
+                    <div class="footer-item">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Inspect values by hovering over the radiograph. Red zones indicate highest model focus.</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RIGHT PANEL: AI Diagnostics & Explainability -->
+            <section class="panel right-panel">
+                <div class="panel-header">
+                    <i class="fa-solid fa-chart-line icon"></i>
+                    <h2>Diagnostic Engine Outputs</h2>
+                </div>
+
+                <div class="diagnostics-placeholder" id="diagnostics-placeholder">
+                    <i class="fa-solid fa-stethoscope"></i>
+                    <p>Diagnostics and explainable clinical reports will generate here upon completing analysis.</p>
+                </div>
+
+                <div class="diagnostics-content" id="diagnostics-content" style="display: none;">
+                    <!-- Principal Diagnosis -->
+                    <div class="diagnostic-card">
+                        <span class="section-label">Primary Radiological Finding</span>
+                        <div class="diagnosis-badge-wrapper">
+                            <div class="diagnosis-name" id="diag-name">Cardiomegaly</div>
+                            <span class="severity-badge" id="diag-severity">Severe</span>
+                        </div>
+                        <div class="metric-group">
+                            <div class="metric-label">
+                                <span>Diagnostic Confidence</span>
+                                <strong id="diag-confidence-pct">89.4%</strong>
+                            </div>
+                            <div class="meter-bar">
+                                <div class="meter-fill bg-cyan" id="diag-confidence-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Breakdown Table / Bars -->
+                    <div class="breakdown-card">
+                        <span class="section-label">Confidence Distribution</span>
+                        <div class="breakdown-list" id="breakdown-list">
+                            <!-- Dynamic items injected here -->
+                        </div>
+                    </div>
+
+                    <!-- GRAD-CAM Explainability Explanation -->
+                    <div class="explainability-card">
+                        <div class="explainability-header">
+                            <span class="section-label">GRAD-CAM Highlight Analysis</span>
+                            <span class="explain-icon" title="Explainable AI Details"><i class="fa-solid fa-brain"></i> Explainable AI</span>
+                        </div>
+                        <p class="explainability-desc" id="diag-explanation">
+                            The heat-map identifies visual density features in the lower regions of the right lung.
+                        </p>
+                    </div>
+
+                    <!-- Clinical Findings / Report -->
+                    <div class="report-card">
+                        <span class="section-label">Structured Patient Radiograph Report</span>
+                        <div class="report-meta">
+                            <span>Ref ID: <strong id="report-ref">#9B8D24</strong></span>
+                            <span>Date: <strong id="report-date">Aug 06, 2026</strong></span>
+                        </div>
+                        <div class="report-text-wrapper">
+                            <h4>Observations & Findings</h4>
+                            <p id="report-findings">
+                                The cardiac silhouette is enlarged...
+                            </p>
+                            <h4>Clinical Actions & Guidelines</h4>
+                            <ul class="recommendation-list" id="report-recommendations">
+                                <!-- Dynamic items injected here -->
+                            </ul>
+                            <h4>Patient Self-Care Precautions</h4>
+                            <ul class="precautions-list" id="report-precautions">
+                                <!-- Dynamic items injected here -->
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Download Reports -->
+                    <div class="report-actions">
+                        <button class="btn btn-secondary" id="btn-copy-report">
+                            <i class="fa-solid fa-copy"></i> Copy Report
+                        </button>
+                        <button class="btn btn-primary" id="btn-download-pdf">
+                            <i class="fa-solid fa-file-arrow-down"></i> Download Clinical Report
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Professional Clinical Disclaimer Banner -->
+        <footer class="app-footer">
+            <div class="disclaimer-banner">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <p><strong>Clinical Notice & Disclaimer:</strong> This system uses an educational machine learning demonstration model. All generated reports, diagnoses, and GRAD-CAM visualizations are for educational purposes and should not be used as clinical recommendations or medical device findings. Treat this as an assistant tool. Consult a board-certified radiologist for medical diagnostics.</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Script imports -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
